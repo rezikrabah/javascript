@@ -8,196 +8,185 @@ class Homepage extends StatefulWidget {
   @override
   State<Homepage> createState() => _HomepageState();
 }
-class _HomepageState extends State<Homepage>  {
-  @override
 
+class _HomepageState extends State<Homepage> {
   @override
-
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
       body: SizedBox(
         width: double.infinity,
+        height: double.infinity,
         child: Stack(
           children: <Widget>[
-            Positioned(
-              top: 0,
-              bottom: 0,
-              left: 0,
-            child:   CachedNetworkImage(
-              imageUrl:
-              'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=774&auto=format&fit=crop&ixlib=rb-4.1.0',
-              fit: BoxFit.cover,
-              placeholder: (_, __) => const SizedBox.shrink(),
-              errorWidget: (_, __, ___) => const SizedBox.shrink(),
-            ),
-          ),
-        Container(
-          width: double.infinity,
-          alignment: Alignment.topCenter,
-          padding: EdgeInsets.only(top: 120),
-           child:
-           Container(
-             decoration: BoxDecoration(
-               shape: BoxShape.circle,
-               boxShadow: [
-                 BoxShadow(
-                   color: const Color(0xFF4ECDC4).withOpacity(0.3),
-                   blurRadius: 20,
-                   spreadRadius: 2,
-                 ),
-               ],
-             ),
-             child: const CircleAvatar(
-               radius: 38,
-               backgroundImage: AssetImage('assets/app.png'),
-             ),
-           ),
+
+            // ── Background image ──────────────────────────
+            Positioned.fill(
+              child: CachedNetworkImage(
+                imageUrl:
+                'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=774&auto=format&fit=crop&ixlib=rb-4.1.0',
+                fit: BoxFit.cover,
+                placeholder: (_, __) => const SizedBox.shrink(),
+                errorWidget: (_, __, ___) => const SizedBox.shrink(),
+              ),
             ),
 
-            Padding(
-              padding: const EdgeInsets.only(bottom: 100,left: 50,top: 250,),
+            // ── Logo ──────────────────────────────────────
+            Positioned(
+              top: screenHeight * 0.12,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF4ECDC4).withOpacity(0.3),
+                        blurRadius: 20,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: CircleAvatar(
+                    radius: screenWidth * 0.1,
+                    backgroundImage: const AssetImage('assets/app.png'),
+                  ),
+                ),
+              ),
+            ),
+
+            // ── Title + Subtitle ──────────────────────────
+            Positioned(
+              top: screenHeight * 0.28,
+              left: screenWidth * 0.1,
+              right: screenWidth * 0.1,
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   RichText(
                     text: TextSpan(
                       children: [
-                        const  TextSpan(
+                        TextSpan(
                           text: 'WAV',
                           style: TextStyle(
-                            fontSize: 36,
+                            fontSize: screenWidth * 0.09,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                             letterSpacing: 2,
                           ),
                         ),
-
-                        const TextSpan(
+                        TextSpan(
                           text: 'eau',
                           style: TextStyle(
-                            fontSize: 31,
+                            fontSize: screenWidth * 0.090,
                             fontWeight: FontWeight.w400,
-                            color: Color(0xFF0EA5E9),
+                            color: const Color(0xFF0EA5E9),
                             letterSpacing: 3,
                           ),
                         ),
                       ],
                     ),
                   ),
-      SizedBox(height: 40,),
-     const Text(
-        'Pure water, delivered.',
-        style: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-          color: Colors.white,
-          letterSpacing: -0.3,
-        ),
-      ),
-
-      SizedBox(height: 8), // 👈 space after tagline
-
-      Text(
-        'Algerias first water delivery app.',
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w900,
-          color: Colors.white.withOpacity(0.60),
-          letterSpacing: 0.4,
-        ),
-      ),
+                  SizedBox(height: screenHeight * 0.09),
+                  Text(
+                    'Eau pure, livrée.',
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.05,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                  SizedBox(height: screenHeight * 0.009),
+                  Text(
+                    'La première application de livraison d\'eau en Algérie.',
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.033,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white.withOpacity(0.60),
+                      letterSpacing: 0.4,
+                    ),
+                  ),
                 ],
               ),
             ),
 
-Container(
-  padding:const EdgeInsets.all(9.0),
-  child:
-  Column(
-    mainAxisAlignment: MainAxisAlignment.end,
-    crossAxisAlignment: CrossAxisAlignment.center,
-    children: [
-      Center(
-          child:  Container(
-            width: double.infinity,
-            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-            decoration: BoxDecoration(
-                color:const Color(0xFF2196F3),
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: [
-                   BoxShadow(
-            color: Colors.blue.withOpacity(0.4),
-            blurRadius: 16,
-            offset: Offset(0, 6),
-          ),
-          ],
-        ),
-
-            child:Row(
-              children: [
-             TextButton.icon(
-                 onPressed: () {
-                   Navigator.push(
-                     context,
-                     MaterialPageRoute(
-                       builder: (context) => Login(),
-                     ),
-                   );
-                 },
-                   label:
-                   const   Text('get started',
-                     style: TextStyle(
-                      color: Colors.white,
-                       fontSize: 20,
-                       fontWeight: FontWeight.w900,
-                     ),
-                   ),
+            // ── Bottom Button ─────────────────────────────
+            Positioned(
+              bottom: screenHeight * 0.1,
+              left: screenWidth * 0.05,
+              right: screenWidth * 0.04,
+              child: Container(
+                width: double.infinity,
+                padding: EdgeInsets.symmetric(
+                  horizontal: screenWidth * 0.04,
+                  vertical: screenHeight * 0.015,
                 ),
-                const  SizedBox(width:100,),
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(10),
-                    boxShadow: [
-                      const    BoxShadow(
-                        color: Colors.blue,
-                        blurRadius: 50,
-                      ),
-                    ],
-                  ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2196F3),
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.blue.withOpacity(0.4),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
 
-                  child: IconButton(  icon:const Icon(CupertinoIcons.arrow_right,color: Colors.white,size: 20,),
-                    onPressed: (){
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => Login(),
+                    // Get started text
+                    GestureDetector(
+                      onTap: () => Navigator.push(context,
+                          MaterialPageRoute(builder: (_) => Login())),
+                      child: Text(
+                        'commencer',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: screenWidth * 0.05,
+                          fontWeight: FontWeight.w900,
                         ),
-                      );
-                    },
-                  ),
+                      ),
+                    ),
+
+                    // Arrow button
+                    GestureDetector(
+                      onTap: () => Navigator.push(context,
+                          MaterialPageRoute(builder: (_) => Login())),
+                      child: Container(
+                        width: screenWidth * 0.1,
+                        height: screenWidth * 0.1,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Colors.blue,
+                              blurRadius: 50,
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          CupertinoIcons.arrow_right,
+                          color: Colors.white,
+                          size: screenWidth * 0.05,
+                        ),
+                      ),
+                    ),
+
+                  ],
                 ),
-            ],
-          ),
-          ),
+              ),
+            ),
 
-      ),
-     const SizedBox(height: 80,),
-
-    ],
-
-  ),
-
-)
           ],
-
         ),
-
       ),
     );
   }
 }
-
-

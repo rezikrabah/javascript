@@ -1,13 +1,16 @@
+import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:test2/pages/createaccpage.dart';
-import '../client/clientpage.dart';
+import '../client/suivi.dart';
 import '../fournisseur/ChauffeurScreen.dart';
 import '../fournisseur/provider_home_screen_FINAL.dart';
 import 'forgotpassword.dart';
 import 'RoleSelectionScreen.dart';
 import '../services/api_service.dart';
 import 'fournisseurinfos.dart';
+import 'admin_dashboard.dart';
 
 class Loginpage extends StatefulWidget {
   const Loginpage({super.key});
@@ -17,29 +20,61 @@ class Loginpage extends StatefulWidget {
 }
 
 class _LoginpageState extends State<Loginpage> {
-  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _emailController    = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
-  bool _isLoading = false;
+  bool _isLoading       = false;
   bool _obscurePassword = true;
 
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
+  static const String _base = 'https://pfe-backend-nwmy.onrender.com';
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
+
+    final email    = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
     setState(() => _isLoading = true);
 
-    final result = await ApiService.login(
-      email: _emailController.text.trim(),
-      password: _passwordController.text.trim(),
-    );
+    // ── STEP 1: try admin login on backend ──────────────────────
+    // In Loginpage.dart _login() method
+    try {
+      final adminRes = await http.post(
+        Uri.parse('$_base/api/admin/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'password': password}),
+      ).timeout(const Duration(seconds: 15));
 
+      print('[Admin] status: ${adminRes.statusCode}');
+      print('[Admin] body: ${adminRes.body}');
+
+      if (adminRes.statusCode == 200) {
+        final data = jsonDecode(adminRes.body);
+        AdminToken.set(data['token']);
+        if (!mounted) return;
+        setState(() => _isLoading = false);
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const AdminApp()),
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Bienvenue Administrateur'), backgroundColor: Colors.purple),
+        );
+        return;
+      } else if (adminRes.statusCode == 401) {
+        // Wrong admin password — don't fall through, just show error
+        // Remove this block if you want non-admins to still try normal login
+      }
+    } catch (e) {
+      print('[Admin] exception: $e');
+      // network error — fall through to normal login
+    }
+
+    // ── STEP 2: normal user login ────────────────────────────────
+    final result = await ApiService.login(email: email, password: password);
+
+    if (!mounted) return;
     setState(() => _isLoading = false);
 
     if (result['error'] != null) {
@@ -59,23 +94,25 @@ class _LoginpageState extends State<Loginpage> {
 
       final String? role = result['user']?['role'];
 
+      if (!mounted) return;
+
       if (role == 'client') {
-        Navigator.pushReplacement(context,
-            MaterialPageRoute(builder: (_) => clientpage()));
+        Navigator.pushReplacement(
+            context, MaterialPageRoute(builder: (_) => suivi()));
       } else if (role == 'chauffeur') {
-        Navigator.pushReplacement(context,
-            MaterialPageRoute(builder: (_) => ProviderHomeScreen()));
+        Navigator.pushReplacement(
+            context, MaterialPageRoute(builder: (_) => ProviderHomeScreen()));
       } else if (role == 'gerant') {
-        Navigator.pushReplacement(context,
-            MaterialPageRoute(builder: (_) => const ChauffeurScreen()));
+        Navigator.pushReplacement(
+            context, MaterialPageRoute(builder: (_) => const ChauffeurScreen()));
       } else {
-        Navigator.pushReplacement(context,
-            MaterialPageRoute(builder: (_) => RoleSelectionScreen()));
+        Navigator.pushReplacement(
+            context, MaterialPageRoute(builder: (_) => RoleSelectionScreen()));
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result['msg'] ?? 'Login failed'),
+          content: Text(result['msg'] ?? 'La connexion a échoué'),
           backgroundColor: Colors.red,
         ),
       );
@@ -84,15 +121,18 @@ class _LoginpageState extends State<Loginpage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth  = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       backgroundColor: const Color(0xFF0C2A34),
       appBar: AppBar(
         iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text(
-          'LOG IN',
+        title: Text(
+          'SE CONNECTER',
           style: TextStyle(
-            color: Color(0xFFEAFBFF),
-            fontSize: 13,
+            color: const Color(0xFFEAFBFF),
+            fontSize: screenWidth * 0.033,
             fontWeight: FontWeight.bold,
             letterSpacing: 2,
           ),
@@ -101,9 +141,9 @@ class _LoginpageState extends State<Loginpage> {
         centerTitle: true,
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 12),
+            padding: EdgeInsets.only(right: screenWidth * 0.03),
             child: Icon(Icons.water_drop,
-                size: 26, color: const Color(0xFF1E88E5)),
+                size: screenWidth * 0.065, color: const Color(0xFF1E88E5)),
           ),
         ],
       ),
@@ -111,24 +151,23 @@ class _LoginpageState extends State<Loginpage> {
         key: _formKey,
         child: Stack(
           children: [
-            // ── Background image ──────────────────────────
+            // Background image
             Positioned.fill(
               child: CachedNetworkImage(
                 imageUrl:
                 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=774&auto=format&fit=crop&ixlib=rb-4.1.0',
                 fit: BoxFit.cover,
                 placeholder: (_, __) => const SizedBox.shrink(),
-                errorWidget: (_, __, ___) => const SizedBox.shrink(),
+                errorWidget:  (_, __, ___) => const SizedBox.shrink(),
               ),
             ),
-
-            // ── Gradient overlay ──────────────────────────
+            // Gradient overlay
             Positioned.fill(
               child: Container(
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
+                    end:   Alignment.bottomCenter,
                     colors: [
                       Color(0x880C2A34),
                       Color(0xDD0C2A34),
@@ -139,16 +178,14 @@ class _LoginpageState extends State<Loginpage> {
                 ),
               ),
             ),
-
-            // ── Content ───────────────────────────────────
+            // Content
             SafeArea(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 28),
+                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.07),
                 child: Column(
                   children: [
-                    const SizedBox(height: 40),
-
-                    // ── Logo ────────────────────────────────
+                    SizedBox(height: screenHeight * 0.04),
+                    // Logo
                     Container(
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
@@ -160,182 +197,105 @@ class _LoginpageState extends State<Loginpage> {
                           ),
                         ],
                       ),
-                      child: const CircleAvatar(
-                        radius: 38,
-                        backgroundImage: AssetImage('assets/app.png'),
+                      child: CircleAvatar(
+                        radius: screenWidth * 0.1,
+                        backgroundImage: const AssetImage('assets/app.png'),
                       ),
                     ),
-                    const SizedBox(height: 16),
-
-                    // ── Title ────────────────────────────────
-                    const Text(
-                      'Welcome back',
+                    SizedBox(height: screenHeight * 0.02),
+                    Text(
+                      'Content de vous revoir',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 24,
+                        fontSize: screenWidth * 0.06,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Add your details to log in',
+                    SizedBox(height: screenHeight * 0.005),
+                    Text(
+                      'Ajoutez vos coordonnées pour vous connecter',
                       style: TextStyle(
-                        color: Color(0xFFB8E3F0),
-                        fontSize: 13,
+                        color: const Color(0xFFB8E3F0),
+                        fontSize: screenWidth * 0.033,
                         fontWeight: FontWeight.w400,
                       ),
                     ),
-                    const SizedBox(height: 32),
-
-                    // ── Email field ──────────────────────────
+                    SizedBox(height: screenHeight * 0.035),
+                    // Email
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
-                      style: const TextStyle(
-                          color: Colors.white, fontSize: 14),
-                      decoration: InputDecoration(
-                        labelText: 'Email',
-                        labelStyle: const TextStyle(
-                          color: Color(0xFF9EC7CF),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        hintText: 'john@example.com',
-                        hintStyle: TextStyle(
-                          fontSize: 12,
-                          color: Colors.white.withOpacity(0.25),
-                        ),
-                        prefixIcon: const Icon(Icons.email_outlined,
-                            color: Color(0xFF00C8F0), size: 20),
-                        filled: true,
-                        fillColor: Colors.white.withOpacity(0.06),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: const BorderSide(
-                              color: Color(0xFF0099CC), width: 1),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: const BorderSide(
-                              color: Color(0xFF00C8F0), width: 1.5),
-                        ),
-                        errorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: const BorderSide(
-                              color: Colors.red, width: 1),
-                        ),
-                        focusedErrorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: const BorderSide(
-                              color: Colors.red, width: 1.5),
-                        ),
-                        errorStyle: const TextStyle(
-                            color: Colors.redAccent, fontSize: 11),
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 14),
+                      style: TextStyle(
+                          color: Colors.white, fontSize: screenWidth * 0.035),
+                      decoration: _inputDecoration(
+                        label: 'Email',
+                        hint:  'john@example.com',
+                        icon:  Icons.email_outlined,
+                        screenWidth:  screenWidth,
+                        screenHeight: screenHeight,
                       ),
                       validator: (v) {
-                        if (v!.isEmpty) return 'Please enter your email';
-                        if (!v.contains('@')) return 'Enter a valid email';
+                        if (v!.isEmpty) return 'Veuillez entrer votre email';
+                        if (!v.contains('@')) return 'Entrez un email valide';
                         return null;
                       },
                     ),
-                    const SizedBox(height: 14),
-
-                    // ── Password field ───────────────────────
+                    SizedBox(height: screenHeight * 0.018),
+                    // Password
                     TextFormField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
-                      style: const TextStyle(
-                          color: Colors.white, fontSize: 14),
-                      decoration: InputDecoration(
-                        labelText: 'Password',
-                        labelStyle: const TextStyle(
-                          color: Color(0xFF9EC7CF),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        hintText: '••••••••',
-                        hintStyle: TextStyle(
-                          fontSize: 12,
-                          color: Colors.white.withOpacity(0.25),
-                        ),
-                        prefixIcon: const Icon(Icons.lock_outline,
-                            color: Color(0xFF00C8F0), size: 20),
+                      style: TextStyle(
+                          color: Colors.white, fontSize: screenWidth * 0.035),
+                      decoration: _inputDecoration(
+                        label: 'Mot de passe',
+                        hint:  '••••••••',
+                        icon:  Icons.lock_outline,
+                        screenWidth:  screenWidth,
+                        screenHeight: screenHeight,
                         suffixIcon: IconButton(
                           icon: Icon(
                             _obscurePassword
                                 ? Icons.visibility_off_outlined
                                 : Icons.visibility_outlined,
                             color: const Color(0xFF9EC7CF),
-                            size: 20,
+                            size: screenWidth * 0.05,
                           ),
                           onPressed: () => setState(
                                   () => _obscurePassword = !_obscurePassword),
                         ),
-                        filled: true,
-                        fillColor: Colors.white.withOpacity(0.06),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: const BorderSide(
-                              color: Color(0xFF0099CC), width: 1),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: const BorderSide(
-                              color: Color(0xFF00C8F0), width: 1.5),
-                        ),
-                        errorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: const BorderSide(
-                              color: Colors.red, width: 1),
-                        ),
-                        focusedErrorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: const BorderSide(
-                              color: Colors.red, width: 1.5),
-                        ),
-                        errorStyle: const TextStyle(
-                            color: Colors.redAccent, fontSize: 11),
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 14),
                       ),
                       validator: (v) {
-                        if (v!.isEmpty) return 'Please enter your password';
-                        if (v.length < 6) return 'At least 6 characters';
+                        if (v!.isEmpty) return 'Veuillez entrer votre mot de passe';
+                        if (v.length < 6) return 'Au moins 6 caractères';
                         return null;
                       },
                     ),
-
-                    // ── Forgot password ──────────────────────
+                    // Forgot password
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
-                        onPressed: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => forgotpassword()),
-                        ),
+                        onPressed: () => Navigator.push(context,
+                            MaterialPageRoute(builder: (_) => forgotpassword())),
                         style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 0, vertical: 8),
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 0, vertical: screenHeight * 0.01),
                         ),
-                        child: const Text(
-                          'Forgot password?',
+                        child: Text(
+                          'Mot de passe oublié?',
                           style: TextStyle(
-                            color: Color(0xFF00C8F0),
-                            fontSize: 12,
+                            color: const Color(0xFF00C8F0),
+                            fontSize: screenWidth * 0.03,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 8),
-
-                    // ── Login button ─────────────────────────
+                    SizedBox(height: screenHeight * 0.01),
+                    // Login button
                     SizedBox(
-                      width: double.infinity,
-                      height: 52,
+                      width:  double.infinity,
+                      height: screenHeight * 0.065,
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _login,
                         style: ElevatedButton.styleFrom(
@@ -344,64 +304,107 @@ class _LoginpageState extends State<Loginpage> {
                           disabledBackgroundColor:
                           const Color(0xFF0099CC).withOpacity(0.5),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
+                              borderRadius: BorderRadius.circular(14)),
                           elevation: 0,
                         ),
                         child: _isLoading
-                            ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
+                            ? SizedBox(
+                          width:  screenWidth * 0.055,
+                          height: screenWidth * 0.055,
+                          child: const CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2),
                         )
-                            : const Text(
-                          'Log in',
+                            : Text(
+                          'Se connecter',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: screenWidth * 0.04,
                             fontWeight: FontWeight.w600,
                             letterSpacing: 0.5,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 24),
-
-                    // ── Sign up link ─────────────────────────
+                    SizedBox(height: screenHeight * 0.03),
+                    // Sign up
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text(
-                          "Don't have an account? ",
+                        Text(
+                          "j'ai pas de compte? ",
                           style: TextStyle(
-                              color: Color(0xFF9EC7CF), fontSize: 13),
+                            color: const Color(0xFF9EC7CF),
+                            fontSize: screenWidth * 0.033,
+                          ),
                         ),
                         GestureDetector(
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => createaccpage()),
-                          ),
-                          child: const Text(
-                            'Sign up',
+                          onTap: () => Navigator.push(context,
+                              MaterialPageRoute(builder: (_) => createaccpage())),
+                          child: Text(
+                            "S'inscrire",
                             style: TextStyle(
-                              color: Color(0xFF00C8F0),
-                              fontSize: 13,
+                              color: const Color(0xFF00C8F0),
+                              fontSize: screenWidth * 0.033,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 32),
+                    SizedBox(height: screenHeight * 0.04),
                   ],
                 ),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration({
+    required String label,
+    required String hint,
+    required IconData icon,
+    required double screenWidth,
+    required double screenHeight,
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: TextStyle(
+        color: const Color(0xFF9EC7CF),
+        fontSize: screenWidth * 0.033,
+        fontWeight: FontWeight.w500,
+      ),
+      hintText: hint,
+      hintStyle: TextStyle(
+          fontSize: screenWidth * 0.03,
+          color: Colors.white.withOpacity(0.25)),
+      prefixIcon: Icon(icon,
+          color: const Color(0xFF00C8F0), size: screenWidth * 0.05),
+      suffixIcon: suffixIcon,
+      filled:    true,
+      fillColor: Colors.white.withOpacity(0.06),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Color(0xFF0099CC), width: 1),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Color(0xFF00C8F0), width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Colors.red, width: 1),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Colors.red, width: 1.5),
+      ),
+      errorStyle: const TextStyle(color: Colors.redAccent, fontSize: 11),
+      contentPadding: EdgeInsets.symmetric(
+        horizontal: screenWidth * 0.04,
+        vertical:   screenHeight * 0.018,
       ),
     );
   }

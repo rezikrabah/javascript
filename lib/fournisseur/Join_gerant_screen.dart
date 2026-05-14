@@ -225,7 +225,7 @@ class _JoinGerantScreenState extends State<JoinGerantScreen> {
                     MaterialPageRoute(builder: (_) => ProviderHomeScreen()),
                   ),
                   child: Text(
-                    'Passer pour l\'instant',
+                    'revenir vers la carte',
                     style: TextStyle(
                       color: isDark ? Colors.white38 : Colors.black38,
                       fontSize: 13,

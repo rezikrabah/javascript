@@ -2,8 +2,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:test2/client/historique.dart';
 import 'package:test2/pages/Loginpage.dart';
-import 'package:test2/pages/main.dart'; // Pour themeNotifier
-import 'clientpage.dart';
+import 'package:test2/main.dart'; // Pour themeNotifier
+
 import 'commandes.dart';
 import 'package:test2/client/suivi.dart';
 import '../services/api_service.dart';
@@ -16,26 +16,106 @@ class profile extends StatefulWidget {
 }
 
 class _profileState extends State<profile> {
+  bool _isLoading = true;
+  String? _error;
+  String _name       = '';
+  String _email      = '';
+  String _memberSince = '';
 
-  // --- Palette de couleurs fixes (header, accent) ---
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
   static const Color kPrimaryDark   = Color(0xFF0B3C49);
   static const Color kAccent        = Color(0xFF1E88E5);
   static const Color kAccentLight   = Color(0xFF6FB6C3);
   static const Color kLogout        = Color(0xFFE53935);
 
-  final String userName    = 'rezik rabah';
-  final String userEmail   = 'rezikrabah1@gmail.com';
-  final String userPhone   = '+213 555 123 456';
-  final String memberSince = 'Membre depuis 2023';
 
   // Switch notifications local
   bool _notifEnabled = true;
+  Future<void> _loadProfile() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
 
+    try {
+      // Use getGerantInfo() → GET /api/auth/me  (works for all roles)
+      final data = await ApiService.getGerantInfo();
+
+      if (data['error'] != null) {
+        setState(() {
+          _error = data['error'];
+          _isLoading = false;
+        });
+        return;
+      }
+
+
+      final String nom = data['nom'] ?? '';
+      final String prenom = data['prenom'] ?? '';
+
+      // Forclients, also fetch /api/clients/me for richer data
+      Map<String, dynamic>clientData = {};
+      if (ApiService.userRole == 'client' ||
+          ApiService.userRole == 'gerant') {
+        clientData = await ApiService.getClientInfo();
+      }
+
+      // Parse member-since date
+      String memberSince = '';
+      if (data['createdAt'] != null) {
+        try {
+          final dt = DateTime.parse(data['createdAt'].toString());
+          const months = [
+            '', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+            'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+          ];
+          memberSince = '${months[dt.month]} ${dt.year}';
+        } catch (_) {}
+      }
+
+      setState(() {
+        _name = '$nom $prenom'.trim();
+        _email = data['email'] ?? '';
+        _memberSince = memberSince;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
   @override
   Widget build(BuildContext context) {
     // isDark = true si mode sombre activé
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    if (_error != null) {
+      return Scaffold(
+        appBar: AppBar(backgroundColor: kPrimaryDark),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, color: Colors.red, size: 48),
+              const SizedBox(height: 12),
+              Text(_error!, textAlign: TextAlign.center),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _loadProfile, // ✅ Retry button
+                child: const Text('Réessayer'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     return Scaffold(
       // Fond adapté au thème
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -51,15 +131,10 @@ class _profileState extends State<profile> {
           'Profil',
           style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: 1.5),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings_outlined, size: 26, color: Colors.white),
-            onPressed: () {
-              // TODO: Naviguer vers paramètres avancés
-            },
-          ),
-        ],
+
       ),
+
+
 
       // ── Body ────────────────────────────────────────────
       body: SingleChildScrollView(
@@ -96,15 +171,15 @@ class _profileState extends State<profile> {
                     ],
                   ),
                   const SizedBox(height: 14),
-                  Text(userName, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                  Text(_name, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
-                  Text(userEmail, style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 13)),
+                  Text(_email, style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 13)),
                   const SizedBox(height: 4),
                   Container(
                     margin: const EdgeInsets.only(top: 6),
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(color: kAccentLight.withOpacity(0.25), borderRadius: BorderRadius.circular(20)),
-                    child: Text(memberSince, style: const TextStyle(color: kAccentLight, fontSize: 11, fontWeight: FontWeight.w600)),
+                    child: Text('Membre depuis $_memberSince', style: const TextStyle(color: kAccentLight, fontSize: 11, fontWeight: FontWeight.w600)),
                   ),
                 ],
               ),
@@ -295,15 +370,6 @@ class _profileState extends State<profile> {
         ),
       ),
 
-      // ── FAB (Home) ───────────────────────────────────────
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: kPrimaryDark,
-        shape: const CircleBorder(),
-        mini: true,
-        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => clientpage())),
-        child: const Icon(CupertinoIcons.home, color: Colors.white),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
 
       // ── Bottom Navigation ────────────────────────────────
       bottomNavigationBar: BottomAppBar(
@@ -458,6 +524,7 @@ class _profileState extends State<profile> {
 
 // ── Informations personnelles ────────────────────────────────────
 class PersonalInfoClientScreen extends StatefulWidget {
+
   const PersonalInfoClientScreen({Key? key}) : super(key: key);
 
   @override
@@ -465,11 +532,26 @@ class PersonalInfoClientScreen extends StatefulWidget {
 }
 
 class _PersonalInfoClientScreenState extends State<PersonalInfoClientScreen> {
+  bool _isLoading = true;
+  String? _error;
   bool _isEditing = false;
-  final _nameController = TextEditingController(text: 'rezik rabah');
-  final _emailController = TextEditingController(text: 'rezikrabah1@gmail.com');
-  final _phoneController = TextEditingController(text: '+213 555 123 456');
-  final _addressController = TextEditingController(text: 'Alger, Algérie');
+
+  // ✅ Declare as real fields, not getters
+  late final TextEditingController _nameController;
+  late final TextEditingController _emailController;
+  late final TextEditingController _phoneController;
+  final TextEditingController _addressController =
+  TextEditingController(text: 'Alger, Algérie');
+
+  @override // ✅ Add missing @override
+  void initState() {
+    super.initState();
+    // ✅ Initialize with empty strings first
+    _nameController  = TextEditingController();
+    _emailController = TextEditingController();
+    _phoneController = TextEditingController();
+    _loadProfile();
+  }
 
   @override
   void dispose() {
@@ -480,9 +562,46 @@ class _PersonalInfoClientScreenState extends State<PersonalInfoClientScreen> {
     super.dispose();
   }
 
+  Future<void> _loadProfile() async {
+    setState(() { _isLoading = true; _error = null; });
+
+    try {
+      final data = await ApiService.getGerantInfo();
+
+      if (data['error'] != null) {
+        setState(() { _error = data['error']; _isLoading = false; });
+        return;
+      }
+
+      final String nom    = data['nom']    ?? '';
+      final String prenom = data['prenom'] ?? '';
+
+      // ✅ Update controllers with the loaded data
+      _nameController.text  = '$nom $prenom'.trim();
+      _emailController.text = data['email']     ?? '';
+      _phoneController.text = data['telephone'] ?? '';
+
+      setState(() { _isLoading = false; }); // ✅ Stop loading on success
+
+    } catch (e) {
+      setState(() { _error = e.toString(); _isLoading = false; });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_error != null) {
+      return Scaffold(
+        body: Center(child: Text('Erreur : $_error')),
+      );
+    }
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
@@ -705,43 +824,52 @@ class HelpClientScreen extends StatefulWidget {
 }
 
 class _HelpClientScreenState extends State<HelpClientScreen> {
-
-  // FAQ adaptée au côté CLIENT (pas fournisseur)
   final List<Map<String, dynamic>> faqs = [
     {
-      'question': 'Comment passer une commande d\'eau ?',
-      'answer': 'Allez dans l\'onglet "Commandes", choisissez la quantité souhaitée et confirmez votre demande. Un fournisseur vous sera assigné automatiquement.',
+      'question': 'Comment ajouter un nouveau camion ?',
+      'answer':
+      'Allez dans "Mes camions" puis cliquez sur le bouton "Ajouter un camion". Remplissez les informations requises et validez.',
       'isOpen': false,
     },
     {
-      'question': 'Comment suivre ma livraison ?',
-      'answer': 'Une fois votre commande acceptée, rendez-vous dans l\'onglet "Suivi" pour voir la position du camion en temps réel sur la carte.',
+      'question': 'Comment recevoir mes paiements ?',
+      'answer':
+      'Les paiements sont versés automatiquement sur votre compte CCP après chaque livraison confirmée. Les délais sont de 24 à 48h ouvrables.',
       'isOpen': false,
     },
     {
-      'question': 'Comment annuler une commande ?',
-      'answer': 'Vous pouvez annuler une commande depuis l\'écran de détail tant qu\'elle n\'est pas encore en cours de livraison.',
+      'question': 'Comment annuler une livraison ?',
+      'answer':
+      'Vous pouvez annuler une livraison depuis l\'écran de détail de la commande. Notez qu\'une annulation fréquente peut affecter votre note.',
       'isOpen': false,
     },
     {
-      'question': 'Comment payer ma livraison ?',
-      'answer': 'Le paiement s\'effectue à la livraison en espèces ou via l\'application. Consultez la section "Paiements" pour plus d\'options.',
+      'question': 'Que faire en cas de panne du camion ?',
+      'answer':
+      'Contactez immédiatement le support via le bouton d\'urgence. Informez aussi le client via l\'application. Notre équipe vous assistera.',
       'isOpen': false,
     },
     {
-      'question': 'Comment évaluer un fournisseur ?',
-      'answer': 'Après chaque livraison, une notification vous invite à laisser une évaluation. Votre avis aide à améliorer la qualité du service.',
+      'question': 'Comment améliorer ma note ?',
+      'answer':
+      'Livrez dans les délais, maintenez la qualité de l\'eau, soyez professionnel avec les clients et répondez rapidement aux commandes.',
       'isOpen': false,
     },
   ];
+  final TextEditingController _ticketController = TextEditingController();
 
+  @override
+  void dispose() {
+    _ticketController.dispose();
+    super.dispose();
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: const Text('Aide & Support'),
-        backgroundColor: const Color(0xFF0B3C49),
+        backgroundColor: const Color(0xFF1E3A8A),
         foregroundColor: Colors.white,
         elevation: 0,
       ),
@@ -749,13 +877,12 @@ class _HelpClientScreenState extends State<HelpClientScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-
-            // ── Contacts rapides ─────────────────────────────
+            // Contact rapide
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF0B3C49), Color(0xFF1E88E5)],
+                  colors: [Color(0xFF1E3A8A), Color(0xFF2563EB)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -763,140 +890,245 @@ class _HelpClientScreenState extends State<HelpClientScreen> {
               ),
               child: Column(
                 children: [
-                  const Text("Besoin d'aide ?",
-                      style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                  const Text(
+                    'Besoin d\'aide ?',
+                    style: TextStyle(
+                        color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 8),
-                  const Text('Notre équipe est disponible 7j/7 de 8h à 20h',
-                      style: TextStyle(color: Colors.white70, fontSize: 14), textAlign: TextAlign.center),
+                  const Text(
+                    'Notre équipe est disponible 7j/7 de 8h à 20h',
+                    style: TextStyle(color: Colors.white70, fontSize: 14),
+                    textAlign: TextAlign.center,
+                  ),
                   const SizedBox(height: 20),
-                  Row(children: [
-                    Expanded(child: _buildContactBtn(Icons.phone, 'Appeler', () {
-                      // TODO: url_launcher → tel:+213...
-                    })),
-                    const SizedBox(width: 12),
-                    Expanded(child: _buildContactBtn(Icons.chat_bubble_outline, 'Chat', () {
-                      // TODO: Ouvrir chat en direct
-                    })),
-                    const SizedBox(width: 12),
-                    Expanded(child: _buildContactBtn(Icons.email_outlined, 'Email', () {
-                      // TODO: url_launcher → mailto:...
-                    })),
-                  ]),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildContactBtn(
+                          Icons.phone,
+                          'Appeler',
+                              () {},
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildContactBtn(
+                          Icons.chat_bubble_outline,
+                          'Chat',
+                              () {},
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildContactBtn(
+                          Icons.email_outlined,
+                          'Email',
+                              () {},
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
+
             const SizedBox(height: 20),
 
-            // ── Bouton urgence ───────────────────────────────
+            // Urgence
             GestureDetector(
-              onTap: () {
-                // TODO: Déclencher l'assistance d'urgence
-              },
+              onTap: () {},
               child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
+                  color: Colors.red[50],
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.red.withOpacity(0.3)),
+                  border: Border.all(color: Colors.red[200]!),
                 ),
                 child: Row(
                   children: [
                     Container(
                       padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(color: Colors.red.withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
+                      decoration: BoxDecoration(
+                        color: Colors.red[100],
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       child: const Icon(Icons.emergency, color: Colors.red, size: 24),
                     ),
                     const SizedBox(width: 12),
-                    const Expanded(child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text("Assistance d'urgence",
-                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.red)),
-                        Text('Problème avec votre livraison en cours',
-                            style: TextStyle(fontSize: 13, color: Colors.red)),
-                      ],
-                    )),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Assistance d\'urgence',
+                            style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.red),
+                          ),
+                          Text(
+                            'Panne, accident ou problème critique',
+                            style: TextStyle(fontSize: 13, color: Colors.red),
+                          ),
+                        ],
+                      ),
+                    ),
                     const Icon(Icons.chevron_right, color: Colors.red),
                   ],
                 ),
               ),
             ),
+
             const SizedBox(height: 20),
 
-            // ── FAQ accordéon ────────────────────────────────
+            // FAQ
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Theme.of(context).cardColor,
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 10, offset: const Offset(0, 2))],
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Questions fréquentes',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface)),
+                  const Text(
+                    'Questions fréquentes',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 16),
-                  ...faqs.asMap().entries.map((entry) => _buildFaqItem(entry.key, entry.value)).toList(),
+                  ...faqs.asMap().entries.map((entry) {
+                    return _buildFaqItem(entry.key, entry.value);
+                  }).toList(),
                 ],
               ),
             ),
+
             const SizedBox(height: 16),
 
-            // ── Formulaire ticket ────────────────────────────
+            // Envoyer un ticket
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Theme.of(context).cardColor,
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 10, offset: const Offset(0, 2))],
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Signaler un problème',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface)),
+                  const Text(
+                    'Signaler un problème',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 16),
                   TextFormField(
+                    controller: _ticketController,
                     maxLines: 4,
-                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                     decoration: InputDecoration(
                       hintText: 'Décrivez votre problème...',
-                      hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
                       filled: true,
-                      fillColor: Theme.of(context).brightness == Brightness.dark
-                          ? const Color(0xFF2A2A2A)
-                          : Colors.grey[50],
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Theme.of(context).dividerColor)),
-                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Theme.of(context).dividerColor)),
-                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF0B3C49), width: 2)),
+                      fillColor: Colors.grey[50],
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey[200]!),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey[200]!),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFF1E3A8A), width: 2),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () {
-                        // TODO: POST /api/support/tickets
+                      onPressed: () async {
+                        final text = _ticketController.text.trim();
+                        if (text.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Veuillez décrire votre problème'),
+                              backgroundColor: Colors.orange,
+                            ),
+                          );
+                          return;
+                        }
+
+                        // Show loading
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (_) => const Center(child: CircularProgressIndicator()),
+                        );
+
+                        final result = await ApiService.submitTicket(
+                          sujet:   'Support client',
+                          message: text,
+                        );
+
+                        if (!mounted) return;
+                        Navigator.pop(context); // close loading dialog
+
+                        if (result['error'] != null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(result['error']),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return;
+                        }
+
+                        _ticketController.clear();
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Ticket envoyé !'), backgroundColor: Colors.green),
+                          const SnackBar(
+                            content: Row(children: [
+                              Icon(Icons.check_circle, color: Colors.white),
+                              SizedBox(width: 8),
+                              Text('Réclamation envoyée avec succès !'),
+                            ]),
+                            backgroundColor: Colors.green,
+                          ),
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF0B3C49),
+                        backgroundColor: const Color(0xFF1E3A8A),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                         elevation: 0,
                       ),
-                      child: const Text('Envoyer le ticket',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      child: const Text(
+                        'Envoyer le ticket',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
+
             const SizedBox(height: 32),
           ],
         ),

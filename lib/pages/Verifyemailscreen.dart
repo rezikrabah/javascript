@@ -24,7 +24,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   final List<FocusNode> _focusNodes =
   List.generate(6, (_) => FocusNode());
 
-  bool _loading = false;
+  bool    _loading = false;
   String? _error;
 
   @override
@@ -34,8 +34,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     super.dispose();
   }
 
-  String get _code =>
-      _controllers.map((c) => c.text).join();
+  String get _code => _controllers.map((c) => c.text).join();
 
   Future<void> _verify() async {
     if (_code.length < 6) {
@@ -66,7 +65,6 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
               backgroundColor: Colors.green,
             ),
           );
-          // ✅ Go to role selection after verification
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -87,72 +85,105 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth  = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       backgroundColor: const Color(0xFF071628),
       appBar: AppBar(
         backgroundColor: const Color(0xFF04111F),
         iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text('Vérification Email',
-            style: TextStyle(color: Color(0xFFB4DCE6))),
+        title: Text(
+          'Vérification Email',
+          style: TextStyle(
+            color: const Color(0xFFB4DCE6),
+            fontSize: screenWidth * 0.045,
+          ),
+        ),
         centerTitle: true,
       ),
       body: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.symmetric(
+          horizontal: screenWidth * 0.06,
+          vertical: screenHeight * 0.02,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const SizedBox(height: 40),
 
-            // Icon
+            SizedBox(height: screenHeight * 0.04),
+
+            // ── Icon ────────────────────────────────────
             Container(
-              width: 80, height: 80,
+              width:  screenWidth * 0.2,
+              height: screenWidth * 0.2,
               decoration: BoxDecoration(
                 color: const Color(0xFF1E88E5).withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.email_outlined,
-                  color: Color(0xFF1E88E5), size: 40),
+              child: Icon(
+                Icons.email_outlined,
+                color: const Color(0xFF1E88E5),
+                size: screenWidth * 0.1,
+              ),
             ),
-            const SizedBox(height: 24),
 
-            const Text('Vérifiez votre email',
-                style: TextStyle(color: Colors.white,
-                    fontSize: 22, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
+            SizedBox(height: screenHeight * 0.025),
 
+            // ── Title ───────────────────────────────────
+            Text(
+              'Vérifiez votre email',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: screenWidth * 0.055,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            SizedBox(height: screenHeight * 0.01),
+
+            // ── Subtitle ─────────────────────────────────
             Text(
               'Un code de vérification a été envoyé à\n${widget.email}',
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Color(0xFF9EC7CF), fontSize: 14),
+              style: TextStyle(
+                color: const Color(0xFF9EC7CF),
+                fontSize: screenWidth * 0.035,
+              ),
             ),
-            const SizedBox(height: 40),
 
-            // ✅ 6-digit code input boxes
+            SizedBox(height: screenHeight * 0.04),
+
+            // ── 6-digit code boxes ────────────────────────
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: List.generate(6, (i) => SizedBox(
-                width: 43, height: 55,
+                width:  screenWidth * 0.12,
+                height: screenWidth * 0.14,
                 child: TextFormField(
                   controller: _controllers[i],
                   focusNode: _focusNodes[i],
                   textAlign: TextAlign.center,
                   keyboardType: TextInputType.number,
                   maxLength: 1,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: screenWidth * 0.055,
+                    fontWeight: FontWeight.bold,
+                  ),
                   decoration: InputDecoration(
                     counterText: '',
                     filled: true,
                     fillColor: Colors.white10,
                     border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none),
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
                     focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                            color: Color(0xFF1E88E5), width: 2)),
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                          color: Color(0xFF1E88E5), width: 2),
+                    ),
                   ),
                   onChanged: (val) {
                     if (val.isNotEmpty && i < 5) {
@@ -161,49 +192,67 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                     if (val.isEmpty && i > 0) {
                       _focusNodes[i - 1].requestFocus();
                     }
-                    // Auto-submit when all 6 filled
                     if (_code.length == 6) _verify();
                   },
                 ),
               )),
             ),
-            const SizedBox(height: 16),
 
-            // Error message
+            SizedBox(height: screenHeight * 0.02),
+
+            // ── Error message ────────────────────────────
             if (_error != null)
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(screenWidth * 0.03),
                 decoration: BoxDecoration(
-                    color: Colors.red.shade900.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(10)),
+                  color: Colors.red.shade900.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(10),
+                ),
                 child: Row(children: [
-                  const Icon(Icons.error_outline,
-                      color: Colors.redAccent, size: 18),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text(_error!,
-                      style: const TextStyle(
-                          color: Colors.redAccent, fontSize: 13))),
+                  Icon(Icons.error_outline,
+                      color: Colors.redAccent, size: screenWidth * 0.045),
+                  SizedBox(width: screenWidth * 0.02),
+                  Expanded(
+                    child: Text(
+                      _error!,
+                      style: TextStyle(
+                        color: Colors.redAccent,
+                        fontSize: screenWidth * 0.033,
+                      ),
+                    ),
+                  ),
                 ]),
               ),
 
-            const SizedBox(height: 32),
+            SizedBox(height: screenHeight * 0.035),
 
-            // Verify button
+            // ── Verify button ─────────────────────────────
             SizedBox(
               width: double.infinity,
-              height: 56,
+              height: screenHeight * 0.07,
               child: ElevatedButton(
                 onPressed: _loading ? null : _verify,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2196F3),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18)),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
                 ),
                 child: _loading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('Vérifier',
-                    style: TextStyle(color: Colors.white,
-                        fontSize: 16, fontWeight: FontWeight.bold)),
+                    ? SizedBox(
+                  width:  screenWidth * 0.055,
+                  height: screenWidth * 0.055,
+                  child: const CircularProgressIndicator(
+                      color: Colors.white, strokeWidth: 2),
+                )
+                    : Text(
+                  'Vérifier',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: screenWidth * 0.045,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
           ],

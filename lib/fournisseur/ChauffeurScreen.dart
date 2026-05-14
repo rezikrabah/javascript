@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import '../services/api_service.dart';
 import '../gerant/profile_gerant.dart';
+import 'history_screen.dart';
 
 class ChauffeurScreen extends StatefulWidget {
   const ChauffeurScreen({Key? key}) : super(key: key);
@@ -67,35 +68,38 @@ class _ChauffeurScreenState extends State<ChauffeurScreen> {
 
     if (confirmed != true) return;
 
-    try {
-      // Remove from gerant's chauffeurs array using the user's _id
-      await ApiService.deleteChauffeur(chauffeur['_id'] ?? chauffeur['id']);
-
-      setState(() {
-        _chauffeurs.removeAt(index);
-        if (_expandedIndex == index) _expandedIndex = -1;
-        if (_expandedIndex > index) _expandedIndex--;
-      });
-
+    final result = await ApiService.deleteChauffeur(chauffeur['_id'] ?? chauffeur['id']);
+    print('DELETE RESULT: $result'); // ← add this
+    print('CHAUFFEUR ID: ${chauffeur['_id'] ?? chauffeur['id']}');
+    // ✅ Check for error before touching the UI
+    if (result.containsKey('error')) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Row(children: [
-            const Icon(Icons.check_circle, color: Colors.white, size: 18),
-            const SizedBox(width: 8),
-            Text('${chauffeur['prenom']} ${chauffeur['nom']} retiré'),
-          ]),
-          backgroundColor: const Color(0xFF2979FF),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ));
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Erreur lors de la suppression'),
+          content: Text(result['error']),
           backgroundColor: Colors.red,
         ));
       }
+      return;
+    }
+
+    // ✅ Only update UI after confirmed success
+    setState(() {
+      _chauffeurs.removeAt(index);
+      if (_expandedIndex == index) _expandedIndex = -1;
+      if (_expandedIndex > index) _expandedIndex--;
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Row(children: [
+          const Icon(Icons.check_circle, color: Colors.white, size: 18),
+          const SizedBox(width: 8),
+          Text('${chauffeur['prenom']} ${chauffeur['nom']} retiré'),
+        ]),
+        backgroundColor: const Color(0xFF2979FF),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ));
     }
   }
 
@@ -105,6 +109,7 @@ class _ChauffeurScreenState extends State<ChauffeurScreen> {
     return Scaffold(
       backgroundColor: isDark ? Theme.of(context).scaffoldBackgroundColor : const Color(0xFFF0F4FF),
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         backgroundColor: isDark ? Theme.of(context).scaffoldBackgroundColor : const Color(0xFFF0F4FF),
         elevation: 0,
         leading: BackButton(color: isDark ? Colors.white : const Color(0xFF1A237E)),
@@ -221,6 +226,22 @@ class _ChauffeurScreenState extends State<ChauffeurScreen> {
               ]),
             ),
             Icon(isExpanded ? Icons.expand_less : Icons.expand_more, color: Colors.grey),
+            GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => HistoryScreen(
+                    chauffeurId: c['_id'] ?? c['id'], // ← pass driver ID
+                  ),
+                ),
+              ),
+              child: Container(
+                margin: const EdgeInsets.only(right: 8),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: isDark ? const Color(0xFF0D4D5E) : Colors.white, borderRadius: BorderRadius.circular(10), border: Border.all(color: isDark ? Colors.white12 : Colors.black12)),
+                child: const Icon(CupertinoIcons.cart_fill_badge_minus, color: Color(0xFF2979FF), size: 20),
+              ),
+            ),
           ]),
           if (isExpanded) ...[
             const SizedBox(height: 12),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:test2/fournisseur/profile_screen.dart';
 import 'package:test2/fournisseur/provider_home_screen_FINAL.dart';
-import 'package:test2/services/api_service.dart';// vice import
+import 'package:test2/services/api_service.dart';
 
 class fournisseurinfos extends StatefulWidget {
   const fournisseurinfos({super.key});
@@ -13,7 +13,7 @@ class fournisseurinfos extends StatefulWidget {
 class _fournisseurinfosState extends State<fournisseurinfos> {
   List<String> selectedwilayas = [];
   String? selectedVolume;
-  bool _submitting = false; // ✅ loading state
+  bool _submitting = false;
 
   final List<String> wilaya = [
     '01 - Adrar', '02 - Chlef', '03 - Laghouat', '04 - Oum El Bouaghi',
@@ -33,23 +33,6 @@ class _fournisseurinfosState extends State<fournisseurinfos> {
     '56 - Djanet', '57 - El M\'Ghair', '58 - El Meniaa',
   ];
 
-  final List<String> volumes = [
-    '500-1000 L',
-    '1 000-2000 L',
-    '2 000-3000 L',
-    '3 000++ L',
-  ];
-
-  // ✅ Parse volume string to a number for the API
-  double _parseVolume(String vol) {
-    if (vol.contains('500-1000'))   return 1000;
-    if (vol.contains('1 000-2000')) return 2000;
-    if (vol.contains('2 000-3000')) return 3000;
-    if (vol.contains('3 000++'))    return 5000;
-    return 1000;
-  }
-
-  // ✅ Submit to backend via ApiService
   Future<void> _submit() async {
     if (!_canConfirm) return;
     setState(() => _submitting = true);
@@ -97,41 +80,53 @@ class _fournisseurinfosState extends State<fournisseurinfos> {
   // ── Wilaya Picker ─────────────────────────────────────────
   void _showwilayaPicker() {
     List<String> tempSelected = List.from(selectedwilayas);
+    final screenWidth  = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) => Container(
-          height: MediaQuery.of(context).size.height * 0.55,
+          height: screenHeight * 0.55,
           decoration: const BoxDecoration(
             color: Color(0xFFF0F4FF),
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(children: [
-            const SizedBox(height: 12),
+            SizedBox(height: screenHeight * 0.015),
             _handle(),
-            const SizedBox(height: 12),
+            SizedBox(height: screenHeight * 0.015),
             Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              const Text("wilayas",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A237E))),
+              Text("wilayas",
+                style: TextStyle(
+                  fontSize: screenWidth * 0.045,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF1A237E),
+                ),
+              ),
               if (tempSelected.isNotEmpty) ...[
-                const SizedBox(width: 8),
+                SizedBox(width: screenWidth * 0.02),
                 CircleAvatar(
-                  radius: 11,
+                  radius: screenWidth * 0.028,
                   backgroundColor: const Color(0xFF2979FF),
-                  child: Text('${tempSelected.length}',
-                      style: const TextStyle(color: Colors.white, fontSize: 12,
-                          fontWeight: FontWeight.bold)),
+                  child: Text(
+                    '${tempSelected.length}',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: screenWidth * 0.03,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ]
             ]),
-            const SizedBox(height: 12),
+            SizedBox(height: screenHeight * 0.015),
             Expanded(
               child: ListView.builder(
                 itemCount: wilaya.length,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
                 itemBuilder: (context, index) {
                   final w = wilaya[index];
                   final isSelected = tempSelected.contains(w);
@@ -140,33 +135,46 @@ class _fournisseurinfosState extends State<fournisseurinfos> {
                       isSelected ? tempSelected.remove(w) : tempSelected.add(w);
                     }),
                     child: Container(
-                      margin: const EdgeInsets.symmetric(vertical: 5),
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                      margin: EdgeInsets.symmetric(vertical: screenHeight * 0.006),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: screenWidth * 0.05,
+                        vertical: screenHeight * 0.016,
+                      ),
                       decoration: BoxDecoration(
                         color: isSelected ? const Color(0xFF2979FF) : Colors.white,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: isSelected ? const Color(0xFF2979FF) : Colors.black12),
+                        border: Border.all(
+                          color: isSelected ? const Color(0xFF2979FF) : Colors.black12,
+                        ),
                       ),
                       child: Row(children: [
                         AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
-                          width: 22, height: 22,
+                          width: screenWidth * 0.055,
+                          height: screenWidth * 0.055,
                           decoration: BoxDecoration(
                             color: isSelected ? Colors.white : Colors.transparent,
                             border: Border.all(
-                                color: isSelected ? Colors.white : Colors.black26, width: 2),
+                              color: isSelected ? Colors.white : Colors.black26,
+                              width: 2,
+                            ),
                             borderRadius: BorderRadius.circular(5),
                           ),
                           child: isSelected
-                              ? const Icon(Icons.check, size: 14, color: Color(0xFF2979FF))
+                              ? Icon(Icons.check,
+                              size: screenWidth * 0.035,
+                              color: const Color(0xFF2979FF))
                               : null,
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: screenWidth * 0.03),
                         Icon(Icons.map_outlined,
-                            color: isSelected ? Colors.white : const Color(0xFF2979FF)),
-                        const SizedBox(width: 14),
+                          color: isSelected ? Colors.white : const Color(0xFF2979FF),
+                          size: screenWidth * 0.055,
+                        ),
+                        SizedBox(width: screenWidth * 0.035),
                         Text(w, style: TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w600,
+                          fontSize: screenWidth * 0.04,
+                          fontWeight: FontWeight.w600,
                           color: isSelected ? Colors.white : const Color(0xFF1A237E),
                         )),
                       ]),
@@ -176,9 +184,15 @@ class _fournisseurinfosState extends State<fournisseurinfos> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              padding: EdgeInsets.fromLTRB(
+                screenWidth * 0.04,
+                screenHeight * 0.01,
+                screenWidth * 0.04,
+                screenHeight * 0.02,
+              ),
               child: SizedBox(
                 width: double.infinity,
+                height: screenHeight * 0.065,
                 child: ElevatedButton(
                   onPressed: tempSelected.isEmpty ? null : () {
                     setState(() => selectedwilayas = List.from(tempSelected));
@@ -187,8 +201,8 @@ class _fournisseurinfosState extends State<fournisseurinfos> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF2979FF),
                     disabledBackgroundColor: Colors.black12,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
                   ),
                   child: Text(
                     tempSelected.isEmpty
@@ -196,7 +210,8 @@ class _fournisseurinfosState extends State<fournisseurinfos> {
                         : 'Confirmer (${tempSelected.length})',
                     style: TextStyle(
                       color: tempSelected.isEmpty ? Colors.black38 : Colors.white,
-                      fontSize: 15, fontWeight: FontWeight.bold,
+                      fontSize: screenWidth * 0.038,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
@@ -210,9 +225,12 @@ class _fournisseurinfosState extends State<fournisseurinfos> {
 
   // ── Volume Picker ─────────────────────────────────────────
   void _showVolumePicker() {
+    final screenWidth  = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
     final ctrl = TextEditingController(
       text: selectedVolume?.replaceAll(' L', '') ?? '',
     );
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -221,129 +239,187 @@ class _fournisseurinfosState extends State<fournisseurinfos> {
         padding: EdgeInsets.only(
             bottom: MediaQuery.of(context).viewInsets.bottom),
         child: Container(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(screenWidth * 0.06),
           decoration: const BoxDecoration(
             color: Color(0xFFF0F4FF),
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             _handle(),
-            const SizedBox(height: 16),
-            const Text("Volume d'eau disponible",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A237E))),
-            const SizedBox(height: 8),
-            const Text("Entrez la quantité exacte en litres",
-                style: TextStyle(color: Colors.black54, fontSize: 13)),
-            const SizedBox(height: 20),
+            SizedBox(height: screenHeight * 0.02),
+            Text(
+              "Volume d'eau disponible",
+              style: TextStyle(
+                fontSize: screenWidth * 0.045,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF1A237E),
+              ),
+            ),
+            SizedBox(height: screenHeight * 0.01),
+            Text(
+              "Entrez la quantité exacte en litres",
+              style: TextStyle(
+                color: Colors.black54,
+                fontSize: screenWidth * 0.033,
+              ),
+            ),
+            SizedBox(height: screenHeight * 0.025),
             TextField(
               controller: ctrl,
               autofocus: true,
               keyboardType: TextInputType.number,
-              style: const TextStyle(
-                  color: Color(0xFF1A237E),
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: const Color(0xFF1A237E),
+                fontSize: screenWidth * 0.06,
+                fontWeight: FontWeight.bold,
+              ),
               textAlign: TextAlign.center,
               decoration: InputDecoration(
                 hintText: 'Ex: 2000',
                 hintStyle: const TextStyle(color: Colors.black26),
                 suffixText: 'L',
-                suffixStyle: const TextStyle(
-                    color: Color(0xFF2979FF),
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold),
+                suffixStyle: TextStyle(
+                  color: const Color(0xFF2979FF),
+                  fontSize: screenWidth * 0.05,
+                  fontWeight: FontWeight.bold,
+                ),
                 filled: true,
                 fillColor: Colors.white,
                 border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide.none),
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: screenHeight * 0.02),
             SizedBox(
               width: double.infinity,
+              height: screenHeight * 0.065,
               child: ElevatedButton(
                 onPressed: () {
                   final val = int.tryParse(ctrl.text.trim());
                   if (val != null && val > 0) {
-                    setState(() => selectedVolume = '${val} L');
+                    setState(() => selectedVolume = '$val L');
                     Navigator.pop(context);
                   }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2979FF),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14)),
                 ),
-                child: const Text('Confirmer',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold)),
+                child: Text(
+                  'Confirmer',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: screenWidth * 0.04,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: screenHeight * 0.01),
           ]),
         ),
       ),
     );
   }
 
-  Widget _handle() => Center(child: Container(
-    width: 40, height: 4,
-    decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(2)),
-  ));
-
-  Widget _fieldTile({
-    required IconData icon, required String hint, required String? value,
-    required Widget trailing, required VoidCallback onTap,
-  }) => GestureDetector(
-    onTap: onTap,
+  Widget _handle() => Center(
     child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      decoration: BoxDecoration(color: Colors.white,
-          borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.black12)),
-      child: Row(children: [
-        Icon(icon, color: value != null ? const Color(0xFF2979FF) : Colors.black38, size: 22),
-        const SizedBox(width: 14),
-        Expanded(child: Text(value ?? hint, style: TextStyle(
-          color: value != null ? const Color(0xFF1A237E) : Colors.black38,
-          fontSize: 15,
-          fontWeight: value != null ? FontWeight.w600 : FontWeight.normal,
-        ))),
-        trailing,
-      ]),
+      width: 40, height: 4,
+      decoration: BoxDecoration(
+        color: Colors.black26,
+        borderRadius: BorderRadius.circular(2),
+      ),
     ),
   );
+
+  Widget _fieldTile({
+    required IconData icon,
+    required String hint,
+    required String? value,
+    required Widget trailing,
+    required VoidCallback onTap,
+    required double screenWidth,
+    required double screenHeight,
+  }) =>
+      GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: screenWidth * 0.04,
+            vertical: screenHeight * 0.02,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.black12),
+          ),
+          child: Row(children: [
+            Icon(icon,
+              color: value != null ? const Color(0xFF2979FF) : Colors.black38,
+              size: screenWidth * 0.055,
+            ),
+            SizedBox(width: screenWidth * 0.035),
+            Expanded(
+              child: Text(
+                value ?? hint,
+                style: TextStyle(
+                  color: value != null ? const Color(0xFF1A237E) : Colors.black38,
+                  fontSize: screenWidth * 0.038,
+                  fontWeight: value != null ? FontWeight.w600 : FontWeight.normal,
+                ),
+              ),
+            ),
+            trailing,
+          ]),
+        ),
+      );
 
   bool get _canConfirm => selectedwilayas.isNotEmpty && selectedVolume != null;
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth  = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF0F4FF),
       appBar: AppBar(
         backgroundColor: const Color(0xFFF0F4FF),
         elevation: 0,
         leading: const BackButton(color: Color(0xFF1A237E)),
-        title: const Text('Informations fournisseur',
-            style: TextStyle(color: Color(0xFF1A237E),
-                fontWeight: FontWeight.bold, fontSize: 17)),
+        title: Text(
+          'Informations fournisseur',
+          style: TextStyle(
+            color: const Color(0xFF1A237E),
+            fontWeight: FontWeight.bold,
+            fontSize: screenWidth * 0.043,
+          ),
+        ),
         actions: [
-          Padding(padding: const EdgeInsets.only(right: 16),
-              child: Icon(Icons.water_drop, color: Colors.blue.shade900)),
+          Padding(
+            padding: EdgeInsets.only(right: screenWidth * 0.04),
+            child: Icon(Icons.water_drop,
+              color: Colors.blue.shade900,
+              size: screenWidth * 0.065,
+            ),
+          ),
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(screenWidth * 0.04),
         child: Column(children: [
+
+          // ── Fields card ──────────────────────────────
           Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.black12)),
+            padding: EdgeInsets.all(screenWidth * 0.04),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.black12),
+            ),
             child: Column(children: [
               _fieldTile(
                 icon: Icons.radio_button_unchecked,
@@ -352,24 +428,38 @@ class _fournisseurinfosState extends State<fournisseurinfos> {
                     ? null
                     : '${selectedwilayas.length} wilaya(s) sélectionnée(s)',
                 onTap: _showwilayaPicker,
+                screenWidth: screenWidth,
+                screenHeight: screenHeight,
                 trailing: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: const Color(0xFF1A237E),
-                      borderRadius: BorderRadius.circular(10)),
-                  child: const Icon(Icons.map, color: Colors.white, size: 18),
+                  padding: EdgeInsets.all(screenWidth * 0.02),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1A237E),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(Icons.map,
+                    color: Colors.white,
+                    size: screenWidth * 0.045,
+                  ),
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: screenHeight * 0.015),
               _fieldTile(
                 icon: Icons.radio_button_unchecked,
                 hint: "Volume d'eau disponible",
                 value: selectedVolume,
                 onTap: _showVolumePicker,
+                screenWidth: screenWidth,
+                screenHeight: screenHeight,
                 trailing: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: const Color(0xFF1A237E),
-                      borderRadius: BorderRadius.circular(10)),
-                  child: const Icon(Icons.local_shipping, color: Colors.white, size: 18),
+                  padding: EdgeInsets.all(screenWidth * 0.02),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1A237E),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(Icons.local_shipping,
+                    color: Colors.white,
+                    size: screenWidth * 0.045,
+                  ),
                 ),
               ),
             ]),
@@ -377,28 +467,37 @@ class _fournisseurinfosState extends State<fournisseurinfos> {
 
           const Spacer(),
 
+          // ── Confirm button ───────────────────────────
           SizedBox(
             width: double.infinity,
+            height: screenHeight * 0.07,
             child: ElevatedButton(
-              // ✅ Call _submit() instead of just navigating
               onPressed: (_canConfirm && !_submitting) ? _submit : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF2979FF),
                 disabledBackgroundColor: Colors.black12,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
               ),
               child: _submitting
-                  ? const SizedBox(height: 20, width: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : Text('Confirmer',
-                  style: TextStyle(
-                    color: _canConfirm ? Colors.white : Colors.black38,
-                    fontSize: 16, fontWeight: FontWeight.bold,
-                  )),
+                  ? SizedBox(
+                height: screenWidth * 0.05,
+                width: screenWidth * 0.05,
+                child: const CircularProgressIndicator(
+                    strokeWidth: 2, color: Colors.white),
+              )
+                  : Text(
+                'Confirmer',
+                style: TextStyle(
+                  color: _canConfirm ? Colors.white : Colors.black38,
+                  fontSize: screenWidth * 0.04,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: 16),
+
+          SizedBox(height: screenHeight * 0.02),
         ]),
       ),
     );

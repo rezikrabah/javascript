@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:test2/gerant/Info.dart';
 import 'package:test2/gerant/gerant_history.dart';
 import 'package:test2/pages/Loginpage.dart';
-import 'package:test2/pages/main.dart';
+import 'package:test2/main.dart';
 import '../fournisseur/provider_home_screen_FINAL.dart';
 import '../services/api_service.dart';
 

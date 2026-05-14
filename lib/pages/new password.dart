@@ -45,7 +45,7 @@ class _newpasswordState extends State<newpassword> {
 
               )
           ),
-          const  Text('new password',
+          const  Text('nouveau mot de passe',
             style: TextStyle(
               color: Colors.white,
               fontSize: 20,
@@ -53,7 +53,7 @@ class _newpasswordState extends State<newpassword> {
             ),
           ),
           const SizedBox(height: 15,),
-          const  Text('please enter your new password',
+          const  Text('veuillez entrer votre nouveau mot de passe',
             style: TextStyle(
               color: Colors.white,
               fontSize: 10,
@@ -74,14 +74,14 @@ class _newpasswordState extends State<newpassword> {
             ),
 
             decoration: InputDecoration(
-              labelText: 'new password',
+              labelText: 'nouveau mot de passe',
               labelStyle: TextStyle(
                 color: Colors.white,
                 fontSize: 15,
                 fontWeight: FontWeight.w800,
               ),
 
-              hintText: 'please enter your new password',
+              hintText: 'veuillez entrer votre nouveau mot de passe',
               hintStyle: const TextStyle(
                 color: Colors.white,
                 fontSize: 13,
@@ -103,7 +103,7 @@ class _newpasswordState extends State<newpassword> {
             onChanged: (String value) {
             },
             validator: (value){
-              return value!. isEmpty ? 'please enter your password':null;
+              return value!. isEmpty ? 'veuillez entrer votre mot de passe':null;
             },
           ),
           const SizedBox(height: 10,),
@@ -118,13 +118,13 @@ class _newpasswordState extends State<newpassword> {
               fontWeight: FontWeight.w500,
             ),
             decoration: InputDecoration(
-              labelText: ' confirm password',
+              labelText: ' Confirmez le mot de passe',
               labelStyle: const TextStyle(
                 color: Colors.white,
                 fontSize: 13,
                 fontWeight: FontWeight.w800,
               ),
-              hintText: 'please  confirm your new password',
+              hintText: 'veuillez confirmer votre nouveau mot de passe',
               hintStyle: const TextStyle(
                 color: Colors.white,
                 fontSize: 13,
@@ -145,7 +145,7 @@ class _newpasswordState extends State<newpassword> {
             onChanged: (String value) {
             },
             validator: (value){
-              return value!. isEmpty ? 'please enter your password':null;
+              return value!. isEmpty ? 'veuillez entrer votre mot de passe':null;
             },
           ),
           const   SizedBox(height: 10,),
@@ -166,7 +166,7 @@ class _newpasswordState extends State<newpassword> {
                 );
               },
               label: const Text(
-                'confirm',style: TextStyle(color: Colors.white,fontSize: 16,fontWeight: FontWeight.w600),
+                'confirmer',style: TextStyle(color: Colors.white,fontSize: 16,fontWeight: FontWeight.w600),
               ),
             ),
 

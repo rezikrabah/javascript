@@ -3,23 +3,20 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:test2/pages/Loginpage.dart';
 import 'package:test2/pages/createaccpage.dart';
 
-void main() => runApp(const MaterialApp(
-  debugShowCheckedModeBanner: false,
-  home: Login(),
-));
-
 class Login extends StatelessWidget {
   const Login({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final h = MediaQuery.of(context).size.height;
+    final screenWidth  = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0C2A34),
       body: Stack(
         children: [
-          // ── Full screen background image ─────────────────
+
+          // ── Background image ──────────────────────────────
           Positioned.fill(
             child: CachedNetworkImage(
               imageUrl:
@@ -30,7 +27,7 @@ class Login extends StatelessWidget {
             ),
           ),
 
-          // ── Dark overlay ─────────────────────────────────
+          // ── Dark overlay ──────────────────────────────────
           Positioned.fill(
             child: Container(
               decoration: const BoxDecoration(
@@ -48,34 +45,38 @@ class Login extends StatelessWidget {
             ),
           ),
 
-          // ── Content ──────────────────────────────────────
+          // ── Content ───────────────────────────────────────
           SafeArea(
             child: Column(
               children: [
-                // Top bar
+
+                // ── Top bar ───────────────────────────────────
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 20, vertical: 12),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: screenWidth * 0.05,
+                    vertical: screenHeight * 0.015,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Log in',
+                      Text(
+                        'Se connecter',
                         style: TextStyle(
-                          color: Color(0xFF4ECDC4),
-                          fontSize: 18,
+                          color: const Color(0xFF4ECDC4),
+                          fontSize: screenWidth * 0.045,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const Icon(Icons.water_drop,
-                          color: Color(0xFF4ECDC4), size: 26),
+                      Icon(Icons.water_drop,
+                          color: const Color(0xFF4ECDC4),
+                          size: screenWidth * 0.065),
                     ],
                   ),
                 ),
 
                 const Spacer(),
 
-                // ── Logo ─────────────────────────────────────
+                // ── Logo ──────────────────────────────────────
                 Container(
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
@@ -87,21 +88,26 @@ class Login extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: const CircleAvatar(
-                    radius: 40,
-                    backgroundImage: AssetImage('assets/app.png'),
+                  child: CircleAvatar(
+                    radius: screenWidth * 0.1,
+                    backgroundImage: const AssetImage('assets/app.png'),
                   ),
                 ),
-                const SizedBox(height: 20),
 
-                const Text(
-                  'Welcome to the first\nwater delivery application',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Color(0xFFB8E3F0),
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    height: 1.5,
+                SizedBox(height: screenHeight * 0.025),
+
+                // ── Subtitle ──────────────────────────────────
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.08),
+                  child: Text(
+                    'Bienvenue dans la première application de livraison d\'eau',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: const Color(0xFFB8E3F0),
+                      fontSize: screenWidth * 0.038,
+                      fontWeight: FontWeight.w500,
+                      height: 1.5,
+                    ),
                   ),
                 ),
 
@@ -109,32 +115,33 @@ class Login extends StatelessWidget {
 
                 // ── Buttons ───────────────────────────────────
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 28),
+                  padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.07),
                   child: Column(
                     children: [
-                      // Login button
                       _GlassButton(
-                        label: 'Login',
+                        label: 'Se connecter',
                         icon: Icons.login_rounded,
                         filled: true,
+                        screenWidth: screenWidth,
+                        screenHeight: screenHeight,
                         onTap: () => Navigator.push(context,
                             MaterialPageRoute(builder: (_) => Loginpage())),
                       ),
-                      const SizedBox(height: 14),
-
-                      // Create account button
+                      SizedBox(height: screenHeight * 0.018),
                       _GlassButton(
-                        label: 'Create an account',
+                        label: 'Créer un compte',
                         icon: Icons.person_add_outlined,
                         filled: false,
+                        screenWidth: screenWidth,
+                        screenHeight: screenHeight,
                         onTap: () => Navigator.push(context,
-                            MaterialPageRoute(
-                                builder: (_) => createaccpage())),
+                            MaterialPageRoute(builder: (_) => createaccpage())),
                       ),
-                      const SizedBox(height: 40),
+                      SizedBox(height: screenHeight * 0.05),
                     ],
                   ),
                 ),
+
               ],
             ),
           ),
@@ -149,12 +156,16 @@ class _GlassButton extends StatelessWidget {
   final IconData icon;
   final bool filled;
   final VoidCallback onTap;
+  final double screenWidth;
+  final double screenHeight;
 
   const _GlassButton({
     required this.label,
     required this.icon,
     required this.filled,
     required this.onTap,
+    required this.screenWidth,
+    required this.screenHeight,
   });
 
   @override
@@ -163,7 +174,7 @@ class _GlassButton extends StatelessWidget {
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        height: 56,
+        height: screenHeight * 0.07,
         decoration: BoxDecoration(
           color: filled
               ? const Color(0xFF4ECDC4)
@@ -181,17 +192,19 @@ class _GlassButton extends StatelessWidget {
           children: [
             Icon(
               icon,
-              size: 20,
-              color: filled ? const Color(0xFF0C2A34) : const Color(0xFF4ECDC4),
+              size: screenWidth * 0.05,
+              color: filled
+                  ? const Color(0xFF0C2A34)
+                  : const Color(0xFF4ECDC4),
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: screenWidth * 0.025),
             Text(
               label,
               style: TextStyle(
                 color: filled
                     ? const Color(0xFF0C2A34)
                     : const Color(0xFF4ECDC4),
-                fontSize: 16,
+                fontSize: screenWidth * 0.04,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.3,
               ),

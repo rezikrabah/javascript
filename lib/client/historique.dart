@@ -2,10 +2,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:test2/client/profile.dart';
 import '../services/api_service.dart';
-import 'clientpage.dart';
 import 'commandes.dart';
 import 'package:test2/client/suivi.dart';
-
 
 class historique extends StatefulWidget {
   const historique({super.key});
@@ -15,8 +13,11 @@ class historique extends StatefulWidget {
 }
 
 class _historiqueState extends State<historique> {
+  bool _isLoading = false;
+  String? _apiError;
 
-  final List<Map<String, String>> _orders = [
+  // ── Hardcoded examples (untouched) ──────────────────────────────
+  final List<Map<String, String>> _hardcodedOrders = [
     {'volume': '500L',  'date': '25 Décembre 2025',  'fournisseur': 'Ramzy Naoui',    'prix': '6000 DA'},
     {'volume': '400L',  'date': '02 Janvier 2025',   'fournisseur': 'Rezik Rabah',    'prix': '5000 DA'},
     {'volume': '200L',  'date': '02 Décembre 2024',  'fournisseur': 'Loucif Rafik',   'prix': '3000 DA'},
@@ -25,16 +26,96 @@ class _historiqueState extends State<historique> {
     {'volume': '1000L', 'date': '03 Janvier 2023',   'fournisseur': 'Islam Madani',   'prix': '8000 DA'},
   ];
 
+  // ── API orders fetched from backend ─────────────────────────────
+  List<Map<String, String>> _apiOrders = [];
+
+  // ── Merged list ──────────────────────────────────────────────────
+  List<Map<String, String>> get _orders => [
+    ..._apiOrders,       // API results first (newest)
+    ..._hardcodedOrders, // then hardcoded below
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDeliveredCommandes();
+  }
+
+  Future<void> _loadDeliveredCommandes() async {
+    setState(() {
+      _isLoading = true;
+      _apiError = null;
+    });
+
+    try {
+      // ✅ Use /my endpoint (client has access) then filter locally
+      final List<dynamic> rawList = await ApiService.getMyCommandes();
+
+      print('[historique] total commandes: ${rawList.length}');
+      if (rawList.isNotEmpty) print('[historique] sample: ${rawList[0]}');
+
+      // ✅ Filter only delivered ones (check all possible status values)
+      final delivered = rawList.where((cmd) {
+        final status = (cmd['status'] ?? cmd['statut'] ?? '').toString().toLowerCase();
+        return status == 'livrée' ||
+            status == 'livree' ||
+            status == 'livrée' ||
+            status == 'delivered' ||
+            status == 'terminée' ||
+            status == 'completed';
+      }).toList();
+
+      print('[historique] delivered: ${delivered.length}');
+
+      final List<Map<String, String>> mapped = delivered.map<Map<String, String>>((cmd) {
+        String dateLabel = '—';
+        try {
+          final dt = DateTime.parse(cmd['createdAt'].toString()).toLocal();
+          const months = [
+            '', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+            'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+          ];
+          dateLabel = '${dt.day.toString().padLeft(2, '0')} ${months[dt.month]} ${dt.year}';
+        } catch (_) {}
+
+        final capacite = (cmd['capacite'] as num?)?.toInt() ?? 0;
+        final prix     = (cmd['prix']     as num?)?.toInt() ?? 0;
+        final fournisseurNom =
+            cmd['fournisseur']?['nom']  ??
+                cmd['fournisseurNom']       ??
+                cmd['chauffeur']?['nom']    ??
+                'Fournisseur';
+
+        return {
+          'volume':      '${capacite}L',
+          'date':        dateLabel,
+          'fournisseur': fournisseurNom.toString(),
+          'prix':        '$prix DA',
+        };
+      }).toList();
+
+      setState(() {
+        _apiOrders = mapped;
+        _isLoading = false;
+      });
+
+    } catch (e) {
+      print('[historique] error: $e');
+      setState(() {
+        _apiError = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      // ✅ Fond adapté au thème
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0C2A34), // Garde sa couleur dans les 2 modes
+        backgroundColor: const Color(0xFF0C2A34),
         elevation: 0,
         centerTitle: true,
         iconTheme: const IconThemeData(color: Colors.white),
@@ -60,7 +141,7 @@ class _historiqueState extends State<historique> {
 
       body: Column(
         children: [
-          // ── Résumé statistiques (garde le dégradé dans les 2 modes) ──
+          // ── Stats summary ──────────────────────────────────
           Container(
             margin: const EdgeInsets.fromLTRB(16, 20, 16, 8),
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
@@ -76,7 +157,7 @@ class _historiqueState extends State<historique> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildStat('6', 'Commandes'),
+                _buildStat('${_orders.length}', 'Commandes'),
                 _buildStatDivider(),
                 _buildStat('35 000 DA', 'Total dépensé'),
                 _buildStatDivider(),
@@ -85,7 +166,7 @@ class _historiqueState extends State<historique> {
             ),
           ),
 
-          // ── Sous-titre ───────────────────────────────────
+          // ── Subtitle ────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             child: Row(
@@ -97,37 +178,50 @@ class _historiqueState extends State<historique> {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    // ✅ Couleur adaptée au thème
                     color: Theme.of(context).colorScheme.onSurface.withOpacity(0.55),
                     letterSpacing: 1,
                   ),
                 ),
+                const Spacer(),
+                // ✅ Loading indicator next to title
+                if (_isLoading)
+                  const SizedBox(
+                    width: 14, height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF4ECDC4)),
+                  ),
               ],
             ),
           ),
 
-          // ── Liste des commandes ──────────────────────────
+          // ✅ API error banner
+          if (_apiError != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Text(
+                'Erreur API : $_apiError',
+                style: const TextStyle(color: Colors.red, fontSize: 12),
+                textAlign: TextAlign.center,
+              ),
+            ),
+
+          // ── Orders list ─────────────────────────────────────
           Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-              itemCount: _orders.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (context, index) => _OrderCard(order: _orders[index], index: index),
+            child: RefreshIndicator(
+              onRefresh: _loadDeliveredCommandes, // ✅ Pull to refresh
+              color: const Color(0xFF4ECDC4),
+              child: ListView.separated(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                itemCount: _orders.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 10),
+                itemBuilder: (context, index) =>
+                    _OrderCard(order: _orders[index], index: index),
+              ),
             ),
           ),
         ],
       ),
 
-      // ── FAB ──────────────────────────────────────────────
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFF4ECDC4),
-        shape: const CircleBorder(),
-        elevation: 4,
-        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => clientpage())),
-        child: const Icon(CupertinoIcons.home, color: Color(0xFF081E27), size: 22),
-      ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-
       bottomNavigationBar: _buildBottomBar(context),
     );
   }
@@ -149,9 +243,7 @@ class _historiqueState extends State<historique> {
 
   Widget _buildBottomBar(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return BottomAppBar(
-      // ✅ Fond adapté au thème
       color: Theme.of(context).cardColor,
       notchMargin: 8,
       height: 75,
@@ -159,44 +251,22 @@ class _historiqueState extends State<historique> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _NavItem(
-            icon: CupertinoIcons.map,
-            label: 'Suivi',
-            isDark: isDark,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => suivi()),
-            ),
-          ),
-          _NavItem(
-            icon: CupertinoIcons.cube_box_fill,
-            label: 'Commandes',
-            isDark: isDark,
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => commandes( clientId: int.tryParse(ApiService.userId ?? '0') ?? 0,))),
-          ),
-          const SizedBox(width: 40), // Espace FAB
-          _NavItem(
-            icon: CupertinoIcons.clock,
-            label: 'Historique',
-            isActive: true,
-            isDark: isDark,
-            onTap: () {},
-          ),
-          _NavItem(
-            icon: CupertinoIcons.profile_circled,
-            label: 'Profil',
-            isDark: isDark,
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => profile())),
-          ),
+          _NavItem(icon: CupertinoIcons.map, label: 'Suivi', isDark: isDark,
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => suivi()))),
+          _NavItem(icon: CupertinoIcons.cube_box_fill, label: 'Commandes', isDark: isDark,
+              onTap: () => Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => commandes(clientId: int.tryParse(ApiService.userId ?? '0') ?? 0)))),
+          const SizedBox(width: 40),
+          _NavItem(icon: CupertinoIcons.clock, label: 'Historique', isActive: true, isDark: isDark, onTap: () {}),
+          _NavItem(icon: CupertinoIcons.profile_circled, label: 'Profil', isDark: isDark,
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => profile()))),
         ],
       ),
     );
   }
 }
 
-// ================================================================
-// CARTE D'UNE COMMANDE
-// ================================================================
+// ── Order card (unchanged) ───────────────────────────────────────
 class _OrderCard extends StatelessWidget {
   final Map<String, String> order;
   final int index;
@@ -210,25 +280,18 @@ class _OrderCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        // ✅ En mode sombre → garde le fond sombre de la carte
-        // ✅ En mode clair → fond blanc avec bordure subtile
-        color: isDark
-            ? const Color(0xFF0B3C49)
-            : Theme.of(context).cardColor,
+        color: isDark ? const Color(0xFF0B3C49) : Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isDark
-              ? const Color(0xFF4ECDC4).withOpacity(0.12)
-              : Colors.grey.withOpacity(0.15),
+          color: isDark ? const Color(0xFF4ECDC4).withOpacity(0.12) : Colors.grey.withOpacity(0.15),
           width: 1,
         ),
         boxShadow: isDark
-            ? [] // Pas d'ombre en mode sombre (le fond foncé suffit)
+            ? []
             : [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 8, offset: const Offset(0, 2))],
       ),
       child: Row(
         children: [
-          // Icône camion
           Container(
             width: 44, height: 44,
             decoration: BoxDecoration(
@@ -238,8 +301,6 @@ class _OrderCard extends StatelessWidget {
             child: const Icon(Icons.local_shipping_rounded, color: Color(0xFF4ECDC4), size: 22),
           ),
           const SizedBox(width: 12),
-
-          // Informations
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -247,41 +308,31 @@ class _OrderCard extends StatelessWidget {
                 Text(
                   '1 citerne × ${order['volume']}',
                   style: TextStyle(
-                    // ✅ Blanc en mode sombre, noir en mode clair
                     color: isDark ? Colors.white : Theme.of(context).colorScheme.onSurface,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 14, fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 3),
-                Text(
-                  order['date']!,
-                  style: const TextStyle(color: Color(0xFF4ECDC4), fontSize: 11),
-                ),
+                Text(order['date']!, style: const TextStyle(color: Color(0xFF4ECDC4), fontSize: 11)),
                 const SizedBox(height: 2),
                 Text(
                   order['fournisseur']!,
                   style: TextStyle(
                     color: isDark ? Colors.lightBlue.shade200 : Colors.blue.shade400,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 10, fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
             ),
           ),
-
-          // Prix + badge Payé
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
                 order['prix']!,
                 style: TextStyle(
-                  // ✅ Blanc en mode sombre, noir en mode clair
                   color: isDark ? Colors.white : Theme.of(context).colorScheme.onSurface,
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 13, fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 6),
@@ -309,9 +360,7 @@ class _OrderCard extends StatelessWidget {
   }
 }
 
-// ================================================================
-// ITEM DE NAVIGATION BAS
-// ================================================================
+// ── Nav item (unchanged) ─────────────────────────────────────────
 class _NavItem extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -329,7 +378,6 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ✅ Couleur adaptée : actif = cyan, inactif = adapté au thème
     final color = isActive
         ? const Color(0xFF4ECDC4)
         : (isDark ? Colors.white54 : const Color(0xFF0B3C49).withOpacity(0.55));

@@ -1,10 +1,11 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:test2/client/clientpage.dart';
+import 'package:test2/client/suivi.dart';
 import 'package:test2/pages/fournisseurinfos.dart';
 import '../services/api_service.dart';
 import 'package:test2/fournisseur/ChauffeurScreen.dart';
+
 
 class RoleSelectionScreen extends StatefulWidget {
   final String? userId;
@@ -35,10 +36,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
 
     if (result['error'] != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result['error']),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text(result['error']), backgroundColor: Colors.red),
       );
       return;
     }
@@ -59,28 +57,28 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
   void _navigate(String role) {
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
-        builder: (context) {
-          if (role == 'client') return clientpage();
-          if (role == 'gerant') return const ChauffeurScreen();
-          return const fournisseurinfos();
-        },
-      ),
+      MaterialPageRoute(builder: (context) {
+        if (role == 'client') return suivi();
+        if (role == 'gerant') return const ChauffeurScreen();
+        return const fournisseurinfos();
+      }),
     );
   }
 
-  // --- Widget de la carte de rôle ---
   Widget _buildRoleCard({
     required IconData icon,
     required String title,
     required String role,
-    required double width,
+    required double screenWidth,
+    required double screenHeight,
   }) {
+    final cardWidth = (screenWidth - screenWidth * 0.14) / 2;
+
     return GestureDetector(
       onTap: _isLoading ? null : () => _selectRole(role),
       child: Container(
-        width: width,
-        height: 160,
+        width: cardWidth,
+        height: screenHeight * 0.2,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
@@ -95,13 +93,13 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 55, color: Colors.blue),
-            const SizedBox(height: 12),
+            Icon(icon, size: screenWidth * 0.14, color: Colors.blue),
+            SizedBox(height: screenHeight * 0.015),
             Text(
               title,
-              style: const TextStyle(
-                color: Color(0xFF0B3C49),
-                fontSize: 17,
+              style: TextStyle(
+                color: const Color(0xFF0B3C49),
+                fontSize: screenWidth * 0.043,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -113,79 +111,96 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Calcul pour avoir exactement 2 cartes par ligne avec espacement
-    final double cardWidth = (MediaQuery.of(context).size.width - 56) / 2;
+    final screenWidth  = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
       backgroundColor: const Color(0xFFEAFBFF),
       appBar: AppBar(
-        iconTheme: const IconThemeData(color: Color(0xFFFFFFFF)),
-        title: const Text(
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: Text(
           "Choisissez votre rôle",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: screenWidth * 0.045,
+          ),
         ),
         backgroundColor: const Color(0xFF0B3C49),
         centerTitle: true,
         elevation: 0,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF0B3C49)))
+          ? const Center(
+        child: CircularProgressIndicator(color: Color(0xFF0B3C49)),
+      )
           : SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
           child: Column(
             children: [
-              const SizedBox(height: 50),
-              const CircleAvatar(
-                radius: 40,
+
+              SizedBox(height: screenHeight * 0.05),
+
+              // ── Logo ──────────────────────────────
+              CircleAvatar(
+                radius: screenWidth * 0.1,
                 backgroundColor: Colors.white,
                 child: Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: Image(
+                  padding: EdgeInsets.all(screenWidth * 0.02),
+                  child: const Image(
                     image: CachedNetworkImageProvider(
                       'https://img.freepik.com/premium-vector/water-vector-logo-design-white-background_1277164-15228.jpg',
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 25),
-              const Text(
+
+              SizedBox(height: screenHeight * 0.03),
+
+              // ── Title ─────────────────────────────
+              Text(
                 "Vous êtes ?",
                 style: TextStyle(
-                  fontSize: 26,
+                  fontSize: screenWidth * 0.065,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF0B3C49),
+                  color: const Color(0xFF0B3C49),
                 ),
               ),
-              const SizedBox(height: 40),
 
-              // --- Grille de sélection centrée ---
+              SizedBox(height: screenHeight * 0.04),
+
+              // ── Role cards grid ───────────────────
               Wrap(
-                spacing: 16,     // Espace horizontal entre les cartes
-                runSpacing: 20,  // Espace vertical entre les lignes
-                alignment: WrapAlignment.center, // CENTRE LE BOUTON CHAUFFEUR
+                spacing: screenWidth * 0.04,
+                runSpacing: screenHeight * 0.025,
+                alignment: WrapAlignment.center,
                 children: [
                   _buildRoleCard(
                     icon: Icons.person,
                     title: "Client",
                     role: "client",
-                    width: cardWidth,
+                    screenWidth: screenWidth,
+                    screenHeight: screenHeight,
                   ),
                   _buildRoleCard(
                     icon: Icons.local_shipping,
-                    title: "chauffeur",
+                    title: "Chauffeur",
                     role: "chauffeur",
-                    width: cardWidth,
+                    screenWidth: screenWidth,
+                    screenHeight: screenHeight,
                   ),
                   _buildRoleCard(
                     icon: Icons.admin_panel_settings,
-                    title: "gerant",
+                    title: "Gérant",
                     role: "gerant",
-                    width: cardWidth,
+                    screenWidth: screenWidth,
+                    screenHeight: screenHeight,
                   ),
                 ],
               ),
-              const SizedBox(height: 40),
+
+              SizedBox(height: screenHeight * 0.05),
             ],
           ),
         ),

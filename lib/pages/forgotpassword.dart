@@ -43,7 +43,7 @@ class _forgotpasswordState extends State<forgotpassword> {
 
           )
       ),
-          const  Text('Reset your password',
+          const  Text('Réinitialisez votre mot de passe',
             style:const  TextStyle(
               color: Colors.white,
               fontSize: 20,
@@ -51,7 +51,7 @@ class _forgotpasswordState extends State<forgotpassword> {
             ),
           ),
           const SizedBox(height: 15,),
-          const Text('please enter your mail to receive a link to create a new password',
+          const Text('veuillez entrer votre mail pour recevoir un lien pour créer un nouveau mot de passe',
             style: TextStyle(
               color: Colors.white,
               fontSize: 10,
@@ -64,13 +64,13 @@ class _forgotpasswordState extends State<forgotpassword> {
           TextFormField(
             keyboardType: TextInputType.emailAddress,
             decoration: InputDecoration(
-              labelText: ' your email',
+              labelText: ' votre email',
               labelStyle: TextStyle(
                 color: Colors.white,
                 fontSize: 15,
                 fontWeight: FontWeight.w800,
               ),
-              hintText: 'enter your email',
+              hintText: 'entrer votre email',
               hintStyle:const TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
@@ -96,7 +96,7 @@ class _forgotpasswordState extends State<forgotpassword> {
             onChanged: (String value) {
             },
             validator: (value){
-              return value!. isEmpty ? 'please enter your email':null;
+              return value!. isEmpty ? 'veuillez entrer votre email':null;
 
             },
           ),
@@ -118,7 +118,7 @@ class _forgotpasswordState extends State<forgotpassword> {
                 );
               },
               label: const Text(
-                'send',style: TextStyle(color: Colors.white,fontSize: 16,fontWeight: FontWeight.w600),
+                'envoyer',style: TextStyle(color: Colors.white,fontSize: 16,fontWeight: FontWeight.w600),
               ),
             ),
 
